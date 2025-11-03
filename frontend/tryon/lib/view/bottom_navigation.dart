@@ -1,23 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'package:tryon/controller/app_provider.dart';
 import 'package:tryon/view/cart.dart';
 import 'package:tryon/view/home_page.dart';
+import 'package:tryon/view/orders_page.dart';
+ 
 
 class BottomNavigation extends StatefulWidget {
-  const BottomNavigation({super.key});
+  final int initialIndex;
+  const BottomNavigation({super.key, this.initialIndex = 0});
 
   @override
   State<BottomNavigation> createState() => _BottomNavigationState();
 }
 
 class _BottomNavigationState extends State<BottomNavigation> {
-  int _selectedIndex = 0;
+  late int _selectedIndex;
 
- final List<Widget> _pages = [
-    HomePage(),
-    Center(child: Text('Favorites Page')),
-    Cart(),
-    Center(child: Text('Profile Page')),
+  // Updated pages
+  final List<Widget> _pages = [
+    const HomePage(),
+    const OrdersPage(), 
+    const CartPage(),
+    const ProfilePage(),  
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = widget.initialIndex;
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -48,8 +61,8 @@ class _BottomNavigationState extends State<BottomNavigation> {
                     icon: Icon(Icons.home),
                   ),
                   BottomNavigationBarItem(
-                    label: 'Favorite',
-                    icon: Icon(Icons.favorite),
+                    label: 'Orders', // Updated
+                    icon: Icon(Icons.receipt_long), // Updated
                   ),
                   BottomNavigationBarItem(
                     label: 'Cart',
@@ -61,10 +74,36 @@ class _BottomNavigationState extends State<BottomNavigation> {
                   ),
                 ],
                 unselectedItemColor: Colors.grey,
-                selectedItemColor: Color(0xffFEDA7A),
+                selectedItemColor: const Color(0xffFEDA7A),
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// A simple profile page with a logout button
+class ProfilePage extends StatelessWidget {
+  const ProfilePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xffF3F3F3),
+      appBar: AppBar(
+        title: Text("Profile", style: GoogleFonts.poppins(color: Colors.black)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      body: Center(
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
+          onPressed: () {
+            context.read<AppProvider>().logout();
+           },
+          child: const Text("Logout"),
         ),
       ),
     );

@@ -55,7 +55,8 @@ class _CategoryItemListState extends State<CategoryItemList> {
                       context,
                       PageTransition(
                           type: PageTransitionType.rightToLeft,
-                          child: ItemData())),
+                          // child: ItemDataPage(item: ,)
+                          )),
                   child: Container(
                     margin: EdgeInsets.symmetric(horizontal: 20),
                     height: 260,

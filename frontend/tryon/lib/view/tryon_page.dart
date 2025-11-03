@@ -13,7 +13,8 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 
 class TryOnPage extends StatefulWidget {
-  const TryOnPage({Key? key}) : super(key: key);
+  final String wannaUrl; // <-- Accept the URL
+  const TryOnPage({Key? key, required this.wannaUrl}) : super(key: key);
 
   @override
   State<TryOnPage> createState() => _TryOnPageState();
@@ -63,9 +64,7 @@ class _TryOnPageState extends State<TryOnPage> {
         ),
       )
       ..loadRequest(
-        Uri.parse(
-          'https://wanna-clothes.ar.wanna.fashion/?mode=vto&showonboarding=3d&modelid=WNCLO01&startwithid=WNCLO01',
-        ),
+        Uri.parse(widget.wannaUrl), // <-- Use the passed-in URL
       );
 
     if (_controller.platform is AndroidWebViewController) {
@@ -145,8 +144,7 @@ Focus on how the outfit complements the individual's natural appearance and pres
 Use this structured format (keep it concise and elegant):
 
 **Suitability:** [Describe how the outfit’s color palette, texture, and visual mood would complement the individual’s features, skin tone, and energy if it were real.]
-**Occasions:** 
-* [Occasion 1]
+**Occasions:** * [Occasion 1]
 * [Occasion 2]
 * [Occasion 3]
 **Completing the Look:**

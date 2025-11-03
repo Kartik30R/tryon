@@ -4,61 +4,70 @@ import 'package:shared_preferences/shared_preferences.dart';
 class SharedPrefUtils {
   static SharedPreferences? _prefs;
 
+  static const String _keyUserId = 'user_id';
+  static const String _keyIsLoggedIn = 'is_logged_in';
+
   /// Initialize prefs (call once in main)
-  static Future init() async {
+  static Future<void> init() async {
     _prefs ??= await SharedPreferences.getInstance();
   }
 
-  /// Save string value
-  static Future setString(String key, String value) async {
+  // ------------------ Generic Methods ------------------
+
+  static Future<void> setString(String key, String value) async {
     await _prefs?.setString(key, value);
   }
 
-  /// Get string value
-  static String? getString(String key) {
-    return _prefs?.getString(key);
-  }
+  static String? getString(String key) => _prefs?.getString(key);
 
-  /// Save bool value
-  static Future setBool(String key, bool value) async {
+  static Future<void> setBool(String key, bool value) async {
     await _prefs?.setBool(key, value);
   }
 
-  /// Get bool value
-  static bool? getBool(String key) {
-    return _prefs?.getBool(key);
-  }
+  static bool? getBool(String key) => _prefs?.getBool(key);
 
-  /// Save int value
-  static Future setInt(String key, int value) async {
+  static Future<void> setInt(String key, int value) async {
     await _prefs?.setInt(key, value);
   }
 
-  /// Get int value
-  static int? getInt(String key) {
-    return _prefs?.getInt(key);
-  }
+  static int? getInt(String key) => _prefs?.getInt(key);
 
-  /// Save any object (encoded as JSON)
-  static Future setObject(String key, Object value) async {
+  static Future<void> setObject(String key, Object value) async {
     final jsonString = jsonEncode(value);
     await _prefs?.setString(key, jsonString);
   }
 
-  /// Get any object (decoded JSON)
   static Map<String, dynamic>? getObject(String key) {
     final jsonString = _prefs?.getString(key);
     if (jsonString == null) return null;
     return jsonDecode(jsonString);
   }
 
-  /// Remove a specific key
-  static Future remove(String key) async {
+  static Future<void> remove(String key) async {
     await _prefs?.remove(key);
   }
 
-  /// Clear all stored data
-  static Future clear() async {
+  static Future<void> clear() async {
     await _prefs?.clear();
+  }
+
+  // ------------------ Auth Helpers ------------------
+
+  /// Save user login data (ID + flag)
+  static Future<void> saveUserSession(String userId) async {
+    await _prefs?.setString(_keyUserId, userId);
+    await _prefs?.setBool(_keyIsLoggedIn, true);
+  }
+
+  /// Get saved user ID
+  static String? getUserId() => _prefs?.getString(_keyUserId);
+
+  /// Check login state
+  static bool isLoggedIn() => _prefs?.getBool(_keyIsLoggedIn) ?? false;
+
+  /// Logout user
+  static Future<void> clearUserSession() async {
+    await _prefs?.remove(_keyUserId);
+    await _prefs?.setBool(_keyIsLoggedIn, false);
   }
 }

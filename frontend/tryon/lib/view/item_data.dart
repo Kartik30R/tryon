@@ -1,55 +1,33 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:expandable/expandable.dart';
 import 'package:page_transition/page_transition.dart';
-import 'package:camerakit_flutter/camerakit_flutter.dart';
-import 'package:camerakit_flutter/lens_model.dart';
-import 'package:tryon/view/tryon_page.dart';
+import 'package:provider/provider.dart';
+import 'package:tryon/controller/app_provider.dart';
+import 'package:tryon/models/item.dart';
 
-import 'category_itemlist.dart';
-
-class ItemData extends StatefulWidget {
-  const ItemData({super.key});
+ import '../models/enums.dart'; // Import your enums
+ import 'tryon_page.dart';
+ 
+class ItemDataPage extends StatefulWidget {
+  final Item item;
+  const ItemDataPage({super.key, required this.item});
 
   @override
-  State<ItemData> createState() => _ItemDataState();
+  State<ItemDataPage> createState() => _ItemDataPageState();
 }
 
-class _ItemDataState extends State<ItemData> implements CameraKitFlutterEvents {
-  late final CameraKitFlutterImpl _cameraKitFlutterImpl;
-
-  // 🔹 Replace these with your actual IDs from Lens Studio / Snap Kit
-  static const String groupId = "5b29451d-1ba0-403c-92cd-614b5eb54be9";
-  static const String lensId = "a4b12f9c-xxxx-xxxx-xxxx-xxxxxxxxxxxx";
+class _ItemDataPageState extends State<ItemDataPage> {
+  // Store the selected size
+  String _selectedSize = "M"; // Default to M
 
   @override
   void initState() {
     super.initState();
-    _cameraKitFlutterImpl = CameraKitFlutterImpl(cameraKitFlutterEvents: this);
+    // Set default selected size from the item's size
+    _selectedSize = widget.item.size.name.characters.first;
   }
-
-  // 🔸 Open CameraKit directly from within the ItemData page
-  void _openCameraKit() {
-    _cameraKitFlutterImpl.openCameraKitWithSingleLens(
-      groupId: groupId,
-      lensId: lensId,
-      isHideCloseButton: false,
-    );
-  }
-
-  @override
-  void onCameraKitResult(Map<dynamic, dynamic> result) {
-    final filePath = result["path"] as String?;
-    final fileType = result["type"] as String?;
-    debugPrint("Captured: $filePath ($fileType)");
-  }
-
-  @override
-  void receivedLenses(List<Lens> lensList) {
-    debugPrint("Received ${lensList.length} lenses");
-  }
-
+  
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -60,13 +38,7 @@ class _ItemDataState extends State<ItemData> implements CameraKitFlutterEvents {
         elevation: 0,
         backgroundColor: Colors.transparent,
         leading: GestureDetector(
-          onTap: () => Navigator.push(
-            context,
-            PageTransition(
-              type: PageTransitionType.leftToRightWithFade,
-              child: const CategoryItemList(),
-            ),
-          ),
+          onTap: () => Navigator.pop(context), // Go back
           child: const Icon(Icons.keyboard_arrow_left, color: Colors.black),
         ),
       ),
@@ -78,9 +50,15 @@ class _ItemDataState extends State<ItemData> implements CameraKitFlutterEvents {
               SizedBox(
                 width: double.infinity,
                 height: size.height * 0.45,
-                child: Image.asset(
-                  'assets/pantsuit.webp',
+                child: Image.network(
+                  widget.item.imagesUrl.isNotEmpty
+                      ? widget.item.imagesUrl[0]
+                      : 'https://placehold.co/600x600/eee/ccc?text=No+Image',
                   fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    color: Colors.grey[200],
+                    child: const Icon(Icons.broken_image, color: Colors.grey),
+                  ),
                 ),
               ),
 
@@ -96,24 +74,28 @@ class _ItemDataState extends State<ItemData> implements CameraKitFlutterEvents {
                     ),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 20),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Title + price
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'White pantsuit',
-                              style: GoogleFonts.poppins(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w500,
+                            Expanded(
+                              child: Text(
+                                widget.item.name,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ),
+                            const SizedBox(width: 10),
                             Text(
-                              '\$580.00',
+                              '\$${widget.item.price.toStringAsFixed(2)}',
                               style: GoogleFonts.poppins(
                                 fontSize: 24,
                                 fontWeight: FontWeight.w600,
@@ -167,7 +149,8 @@ class _ItemDataState extends State<ItemData> implements CameraKitFlutterEvents {
                                     ),
                                     const SizedBox(height: 10),
                                     Text(
-                                      'Stylish touch coat, classic, pleasant to the touch from natural materials. Perfect for semi-formal occasions and daily wear, designed to enhance your elegance.',
+                                      widget.item.description ??
+                                          'No description available.',
                                       style: GoogleFonts.poppins(
                                         fontSize: 16,
                                         color: Colors.grey,
@@ -184,6 +167,8 @@ class _ItemDataState extends State<ItemData> implements CameraKitFlutterEvents {
                   ),
                 ),
               ),
+              // Spacer to keep details from being covered by bottom bar
+              SizedBox(height: 200),
             ],
           ),
 
@@ -217,17 +202,24 @@ class _ItemDataState extends State<ItemData> implements CameraKitFlutterEvents {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: ['S', 'M', 'L']
                           .map(
-                            (sizeLabel) => Container(
-                              margin:
-                                  const EdgeInsets.symmetric(horizontal: 6),
-                              child: CircleAvatar(
-                                radius: 25,
-                                backgroundColor: const Color(0xffF5F5F5),
-                                child: Text(
-                                  sizeLabel,
-                                  style: GoogleFonts.poppins(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.w600,
+                            (sizeLabel) => GestureDetector(
+                              onTap: () => setState(() => _selectedSize = sizeLabel),
+                              child: Container(
+                                margin:
+                                    const EdgeInsets.symmetric(horizontal: 6),
+                                child: CircleAvatar(
+                                  radius: 25,
+                                  backgroundColor: _selectedSize == sizeLabel
+                                      ? Colors.black
+                                      : const Color(0xffF5F5F5),
+                                  child: Text(
+                                    sizeLabel,
+                                    style: GoogleFonts.poppins(
+                                      color: _selectedSize == sizeLabel
+                                          ? Colors.white
+                                          : Colors.black,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -249,9 +241,27 @@ class _ItemDataState extends State<ItemData> implements CameraKitFlutterEvents {
                           borderRadius: BorderRadius.circular(15),
                         ),
                       ),
-                      onPressed: ()=>Navigator.push(context, PageTransition(type: PageTransitionType.fade,child: TryOnPage()))
-                      //  _openCameraKit
-                       , // 👈 integrated lens open
+                      onPressed: () {
+                        // Check if item supports WANNA AR
+                        if (widget.item.ar == ArType.WANNA &&
+                            widget.item.wannaUrl != null &&
+                            widget.item.wannaUrl!.isNotEmpty) {
+                          Navigator.push(
+                            context,
+                            PageTransition(
+                              type: PageTransitionType.fade,
+                              child: TryOnPage(wannaUrl: widget.item.wannaUrl!),
+                            ),
+                          );
+                        } else {
+                          // Handle other AR types or no AR
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content: Text(
+                                    "Try-On not available for this item (Type: ${widget.item.ar.name})")),
+                          );
+                        }
+                      },
                       icon: const Icon(Icons.accessibility_new),
                       label: Text(
                         'Try On',
@@ -276,8 +286,10 @@ class _ItemDataState extends State<ItemData> implements CameraKitFlutterEvents {
                         ),
                       ),
                       onPressed: () {
+                        context.read<AppProvider>().addItemToCart(widget.item.id);
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Added to basket")),
+                          SnackBar(
+                              content: Text("Added ${widget.item.name} to basket")),
                         );
                       },
                       icon: const Icon(Icons.add_shopping_cart),
