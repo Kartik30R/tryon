@@ -1,13 +1,54 @@
-import 'package:tryon/view/cart.dart';
-import 'package:tryon/view/category_itemlist.dart';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:expandable/expandable.dart';
 import 'package:page_transition/page_transition.dart';
+import 'package:camerakit_flutter/camerakit_flutter.dart';
+import 'package:camerakit_flutter/lens_model.dart';
 import 'package:tryon/view/tryon_page.dart';
 
-class ItemData extends StatelessWidget {
+import 'category_itemlist.dart';
+
+class ItemData extends StatefulWidget {
   const ItemData({super.key});
+
+  @override
+  State<ItemData> createState() => _ItemDataState();
+}
+
+class _ItemDataState extends State<ItemData> implements CameraKitFlutterEvents {
+  late final CameraKitFlutterImpl _cameraKitFlutterImpl;
+
+  // 🔹 Replace these with your actual IDs from Lens Studio / Snap Kit
+  static const String groupId = "5b29451d-1ba0-403c-92cd-614b5eb54be9";
+  static const String lensId = "a4b12f9c-xxxx-xxxx-xxxx-xxxxxxxxxxxx";
+
+  @override
+  void initState() {
+    super.initState();
+    _cameraKitFlutterImpl = CameraKitFlutterImpl(cameraKitFlutterEvents: this);
+  }
+
+  // 🔸 Open CameraKit directly from within the ItemData page
+  void _openCameraKit() {
+    _cameraKitFlutterImpl.openCameraKitWithSingleLens(
+      groupId: groupId,
+      lensId: lensId,
+      isHideCloseButton: false,
+    );
+  }
+
+  @override
+  void onCameraKitResult(Map<dynamic, dynamic> result) {
+    final filePath = result["path"] as String?;
+    final fileType = result["type"] as String?;
+    debugPrint("Captured: $filePath ($fileType)");
+  }
+
+  @override
+  void receivedLenses(List<Lens> lensList) {
+    debugPrint("Received ${lensList.length} lenses");
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,10 +72,9 @@ class ItemData extends StatelessWidget {
       ),
       body: Stack(
         children: [
-          // 🔹 Main content
           Column(
             children: [
-              // 🔸 Image section
+              // 🔹 Image section
               SizedBox(
                 width: double.infinity,
                 height: size.height * 0.45,
@@ -44,7 +84,7 @@ class ItemData extends StatelessWidget {
                 ),
               ),
 
-              // 🔸 Product details with scrollable description
+              // 🔹 Product details
               Expanded(
                 child: Container(
                   width: double.infinity,
@@ -56,12 +96,12 @@ class ItemData extends StatelessWidget {
                     ),
                   ),
                   child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Product title and price
+                        // Title + price
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -83,7 +123,7 @@ class ItemData extends StatelessWidget {
                         ),
                         const SizedBox(height: 15),
 
-                        // 🔸 Scrollable description only
+                        // 🔹 Expandable description
                         Expanded(
                           child: SingleChildScrollView(
                             physics: const BouncingScrollPhysics(),
@@ -120,15 +160,14 @@ class ItemData extends StatelessWidget {
                                           ),
                                         ),
                                         ExpandableButton(
-                                          child: const Icon(
-                                              Icons.keyboard_arrow_up),
+                                          child:
+                                              const Icon(Icons.keyboard_arrow_up),
                                         ),
                                       ],
                                     ),
                                     const SizedBox(height: 10),
                                     Text(
-                                      'Stylish touch coat, classic, pleasant to the touch from natural materials. '
-                                      'Perfect for semi-formal occasions and daily wear, designed to enhance your elegance.',
+                                      'Stylish touch coat, classic, pleasant to the touch from natural materials. Perfect for semi-formal occasions and daily wear, designed to enhance your elegance.',
                                       style: GoogleFonts.poppins(
                                         fontSize: 16,
                                         color: Colors.grey,
@@ -140,7 +179,6 @@ class ItemData extends StatelessWidget {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 15),
                       ],
                     ),
                   ),
@@ -149,7 +187,7 @@ class ItemData extends StatelessWidget {
             ],
           ),
 
-          // 🔹 Fixed bottom controls
+          // 🔹 Bottom control bar
           Align(
             alignment: Alignment.bottomCenter,
             child: Container(
@@ -157,7 +195,10 @@ class ItemData extends StatelessWidget {
                   const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
               decoration: const BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.only(topLeft: Radius.circular(16),topRight: Radius.circular(16)),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black12,
@@ -169,12 +210,12 @@ class ItemData extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Size selector
+                  // 🔸 Size selector
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: [ 'S', 'M', 'L',]
+                      children: ['S', 'M', 'L']
                           .map(
                             (sizeLabel) => Container(
                               margin:
@@ -197,7 +238,7 @@ class ItemData extends StatelessWidget {
                   ),
                   const SizedBox(height: 15),
 
-                  // Try On button
+                  // 🔸 Try On button
                   SizedBox(
                     height: 55,
                     width: size.width * 0.85,
@@ -208,7 +249,9 @@ class ItemData extends StatelessWidget {
                           borderRadius: BorderRadius.circular(15),
                         ),
                       ),
-                      onPressed: () => Navigator.push(context, PageTransition(type: PageTransitionType.fade,child: TryOnPage())),
+                      onPressed: ()=>Navigator.push(context, PageTransition(type: PageTransitionType.fade,child: TryOnPage()))
+                      //  _openCameraKit
+                       , // 👈 integrated lens open
                       icon: const Icon(Icons.accessibility_new),
                       label: Text(
                         'Try On',
@@ -221,7 +264,7 @@ class ItemData extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
 
-                  // Add to Basket button
+                  // 🔸 Add to Basket
                   SizedBox(
                     height: 55,
                     width: size.width * 0.85,
@@ -232,13 +275,11 @@ class ItemData extends StatelessWidget {
                           borderRadius: BorderRadius.circular(15),
                         ),
                       ),
-                      onPressed: () => Navigator.push(
-                        context,
-                        PageTransition(
-                          type: PageTransitionType.fade,
-                          child: const Cart(),
-                        ),
-                      ),
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Added to basket")),
+                        );
+                      },
                       icon: const Icon(Icons.add_shopping_cart),
                       label: Text(
                         'Add to Basket',
