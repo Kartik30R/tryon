@@ -19,7 +19,13 @@ TryOn redefines digital fashion with an **Augmented Reality (AR) Try-On experien
 
 * **Frontend:** Flutter (Dart)
 * **Backend:**   Node.js
- 
+
+
+## 🧩 Backend Repository
+
+This project uses a separate backend service for API and data management.  
+🔗 [Tryon Backend Repository](https://github.com/manmohitsingh23/ecomBackend)
+
 
 ---
 
