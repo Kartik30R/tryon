@@ -4,7 +4,8 @@ import 'package:tryon/models/api_responses.dart';
 import 'package:tryon/models/cart.dart';
 import 'package:tryon/models/item.dart';
 import 'package:tryon/models/order.dart';
-  
+import 'package:tryon/models/user.dart';
+ 
 
 part 'api_service.g.dart';
 
@@ -23,9 +24,13 @@ abstract class ApiService {
   @POST("/auth/adminSignup")
   Future<AuthResponse> adminSignup(@Body() Map<String, dynamic> body);
 
- @POST("/item/bulk")
-Future<dynamic> bulkCreateItems(@Body() Map<String, dynamic> body);
+  @GET("/auth/user/{userId}")
+  Future<User> getUserById(@Path("userId") String userId);
 
+  // --- Item Routes ---
+
+  @POST("/item/bulk")
+  Future<dynamic> bulkCreateItems(@Body() Map<String, dynamic> body);
 
   @GET("/item")
   Future<List<Item>> getAllItems();

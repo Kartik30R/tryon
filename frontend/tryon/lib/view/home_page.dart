@@ -3,9 +3,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
 import 'package:tryon/controller/app_provider.dart';
-import 'package:tryon/models/item.dart';
-import 'package:tryon/view/item_data.dart';
-import 'package:tryon/view/tryon_page.dart';
+import 'package:tryon/models/enums.dart';
+import 'package:tryon/view/categories.dart';
+import 'package:tryon/view/category_itemlist.dart';
+import 'package:tryon/view/widget/item_card_widget.dart';
  
 
 class HomePage extends StatelessWidget {
@@ -50,28 +51,74 @@ class HomePage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10),
-            // Categories (static as per your UI)
+
+            // Categories (NOW WIRED UP with new enums)
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: <Widget>[
                 _CategoryIcon(
                   icon: Icons.category_rounded,
                   label: 'All',
-                  onTap: () {
-                    // Navigator.push(context, PageTransition(type: PageTransitionType.rightToLeft, child: Category()));
-                  },
+                  onTap: () => Navigator.push(
+                    context,
+                    PageTransition(
+                      type: PageTransitionType.rightToLeft,
+                      child: const CategoryPage(),
+                    ),
+                  ),
                 ),
                 _CategoryIcon(
-                    asset: 'assets/dress.png', label: 'Clothing', onTap: () {}),
+                  asset: 'assets/dress.png',
+                  label: 'Clothing',
+                  onTap: () => Navigator.push(
+                    context,
+                    PageTransition(
+                      type: PageTransitionType.rightToLeft,
+                      child: const CategoryItemListPage(
+                        title: 'Clothing',
+                        categories: [
+                          ItemCategory.cloths // Updated
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
                 _CategoryIcon(
-                    asset: 'assets/sunglasses.png',
-                    label: 'Accessories',
-                    onTap: () {}),
+                  asset: 'assets/sunglasses.png',
+                  label: 'Accessories',
+                  onTap: () => Navigator.push(
+                    context,
+                    PageTransition(
+                      type: PageTransitionType.rightToLeft,
+                      child: const CategoryItemListPage(
+                        title: 'Accessories',
+                        categories: [
+                          ItemCategory.accessories, // Updated
+                          ItemCategory.watch
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
                 _CategoryIcon(
-                    asset: 'assets/handbag.png', label: 'Bags', onTap: () {}),
+                  asset: 'assets/handbag.png',
+                  label: 'Bags',
+                  onTap: () => Navigator.push(
+                    context,
+                    PageTransition(
+                      type: PageTransitionType.rightToLeft,
+                      child: const CategoryItemListPage(
+                        title: 'Bags',
+                        // Mapped "Bags" to the accessories category
+                        categories: [ItemCategory.accessories],
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 10),
+
             // Promo Banner (static as per your UI)
             Container(
               decoration: BoxDecoration(
@@ -156,7 +203,7 @@ class HomePage extends StatelessWidget {
       itemCount: appProvider.allItems.length,
       itemBuilder: (context, index) {
         final item = appProvider.allItems[index];
-        return ItemCard(item: item);
+        return ItemCard(item: item); // Use the new reusable widget
       },
     );
   }
@@ -197,106 +244,3 @@ class _CategoryIcon extends StatelessWidget {
   }
 }
 
-// Helper Widget for Item Card
-class ItemCard extends StatelessWidget {
-  final Item item;
-  const ItemCard({super.key, required this.item});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        PageTransition(
-          type: PageTransitionType.rightToLeft,
-          child: ItemDataPage(item: item), // Pass the full item
-        ),
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Stack(
-              children: <Widget>[
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                  child: Image.network(
-                    item.imagesUrl.isNotEmpty
-                        ? item.imagesUrl[0]
-                        : 'https://placehold.co/600x600/eee/ccc?text=No+Image', // Placeholder
-                    fit: BoxFit.cover,
-                    height: 210,
-                    width: double.infinity,
-                    errorBuilder: (context, error, stackTrace) =>
-                        Container(
-                          height: 210,
-                          color: Colors.grey[200],
-                          child: const Icon(Icons.broken_image, color: Colors.grey),
-                        ),
-                  ),
-                ),
-                Align(
-                  alignment: Alignment.topRight,
-                  child: Container(
-                    margin: const EdgeInsets.all(6),
-                    child: const CircleAvatar(
-                      foregroundColor: Colors.black,
-                      backgroundColor: Colors.white,
-                      child: Icon(Icons.favorite_border),
-                    ),
-                  ),
-                )
-              ],
-            ),
-            Padding(
-              padding: const EdgeInsets.all(10.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 5),
-                  Text(
-                    item.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.grey,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: <Widget>[
-                      Text(
-                        '\$${item.price.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w900,
-                          fontSize: 15,
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.add),
-                        onPressed: () {
-                          context.read<AppProvider>().addItemToCart(item.id);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text("Added ${item.name} to cart"),
-                              duration: const Duration(seconds: 1),
-                            ),
-                          );
-                        },
-                      )
-                    ],
-                  )
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

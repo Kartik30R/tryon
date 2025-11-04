@@ -4,7 +4,7 @@ import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
 import 'package:tryon/controller/app_provider.dart';
 import 'package:tryon/models/cart.dart';
-import 'confirm_page.dart';
+ import 'confirm_page.dart';
 
 class CartPage extends StatelessWidget {
   const CartPage({super.key});
@@ -171,18 +171,22 @@ class CartItemTile extends StatelessWidget {
           // You had this checkbox, I'm keeping it but it's not functional
           const Icon(Icons.check_box_rounded),
           const SizedBox(width: 15),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(15),
-            child: Image.network(
-              cartItem.item.imagesUrl.isNotEmpty
-                  ? cartItem.item.imagesUrl[0]
-                  : 'https://placehold.co/70x70/eee/ccc?text=No+Image',
-              height: 70,
-              width: 70,
-              fit: BoxFit.cover,
-            ),
-          ),
-          const SizedBox(width: 15),
+          
+          // --- IMAGE REMOVED AS REQUESTED ---
+          // ClipRRect(
+          //   borderRadius: BorderRadius.circular(15),
+          //   child: Image.network(
+          //     cartItem.item.imagesUrl.isNotEmpty
+          //         ? cartItem.item.imagesUrl[0]
+          //         : 'https://placehold.co/70x70/eee/ccc?text=No+Image',
+          //     height: 70,
+          //     width: 70,
+          //     fit: BoxFit.cover,
+          //   ),
+          // ),
+          // const SizedBox(width: 15),
+          // ----------------------------------
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -273,3 +277,4 @@ class _OrderInfoRow extends StatelessWidget {
     );
   }
 }
+

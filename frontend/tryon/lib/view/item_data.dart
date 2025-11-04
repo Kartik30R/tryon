@@ -5,10 +5,10 @@ import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
 import 'package:tryon/controller/app_provider.dart';
 import 'package:tryon/models/item.dart';
-
- import '../models/enums.dart'; // Import your enums
- import 'tryon_page.dart';
  
+import '../models/enums.dart';  
+import 'tryon_page.dart';
+
 class ItemDataPage extends StatefulWidget {
   final Item item;
   const ItemDataPage({super.key, required this.item});
@@ -20,14 +20,43 @@ class ItemDataPage extends StatefulWidget {
 class _ItemDataPageState extends State<ItemDataPage> {
   // Store the selected size
   String _selectedSize = "M"; // Default to M
+  
+  // --- ADDED FOR ASYNC BUTTON ---
+  bool _isAddingToCart = false;
+  // -----------------------------
 
   @override
   void initState() {
     super.initState();
     // Set default selected size from the item's size
+    // Use the first character of the enum name (e.g., SMALL -> S)
     _selectedSize = widget.item.size.name.characters.first;
   }
-  
+
+  // --- UPDATED FOR void RETURN TYPE ---
+  Future<void> _handleAddToCart() async {
+    setState(() => _isAddingToCart = true);
+    
+    final appProvider = context.read<AppProvider>();
+    // Call the void function, it will set state in the provider
+    await appProvider.addItemToCart(widget.item.id);
+
+    if (mounted) {
+      // Check the provider's error state *after* the call
+      if (appProvider.cartError == null) {
+        // Success
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Added ${widget.item.name} to basket"),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+      setState(() => _isAddingToCart = false);
+    }
+  }
+  // ---------------------------------
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -168,7 +197,7 @@ class _ItemDataPageState extends State<ItemDataPage> {
                 ),
               ),
               // Spacer to keep details from being covered by bottom bar
-              SizedBox(height: 200),
+              const SizedBox(height: 200),
             ],
           ),
 
@@ -285,16 +314,21 @@ class _ItemDataPageState extends State<ItemDataPage> {
                           borderRadius: BorderRadius.circular(15),
                         ),
                       ),
-                      onPressed: () {
-                        context.read<AppProvider>().addItemToCart(widget.item.id);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                              content: Text("Added ${widget.item.name} to basket")),
-                        );
-                      },
-                      icon: const Icon(Icons.add_shopping_cart),
+                      // --- UPDATED OnPressed ---
+                      onPressed: _isAddingToCart ? null : _handleAddToCart,
+                      icon: _isAddingToCart
+                          ? Container(
+                              width: 24,
+                              height: 24,
+                              padding: const EdgeInsets.all(2.0),
+                              child: const CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 3,
+                              ),
+                            )
+                          : const Icon(Icons.add_shopping_cart),
                       label: Text(
-                        'Add to Basket',
+                        _isAddingToCart ? 'Adding...' : 'Add to Basket',
                         style: GoogleFonts.poppins(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -311,3 +345,4 @@ class _ItemDataPageState extends State<ItemDataPage> {
     );
   }
 }
+

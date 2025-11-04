@@ -1,418 +1,99 @@
-import 'package:tryon/view/categories.dart';
-import 'package:tryon/view/home_page.dart';
-import 'package:tryon/view/item_data.dart';
 import 'package:flutter/material.dart';
-import 'package:page_transition/page_transition.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'package:tryon/controller/app_provider.dart';
+import 'package:tryon/models/item.dart';
+import 'package:tryon/view/widget/item_card_widget.dart';
+import '../models/enums.dart';
+ 
 
-class CategoryItemList extends StatefulWidget {
-  const CategoryItemList({super.key});
+class CategoryItemListPage extends StatelessWidget {
+  final String title;
+  final List<ItemCategory> categories;
 
-  @override
-  State<CategoryItemList> createState() => _CategoryItemListState();
-}
+  const CategoryItemListPage({
+    super.key,
+    required this.title,
+    required this.categories,
+  });
 
-class _CategoryItemListState extends State<CategoryItemList> {
   @override
   Widget build(BuildContext context) {
+    final appProvider = context.watch<AppProvider>();
+    
+    // Filter the items based on the categories passed to this widget
+    final List<Item> filteredItems = appProvider.allItems
+        .where((item) => categories.contains(item.category))
+        .toList();
+
     return Scaffold(
-      backgroundColor: Color(0xffF3F3F3),
+      backgroundColor: const Color(0xffF3F3F3),
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Color(0xffF3F3F3),
+        backgroundColor: const Color(0xffF3F3F3),
         title: Text(
-          'Clothing',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.w300),
+          title, // Use the dynamic title
+          style: GoogleFonts.poppins(
+              color: Colors.black, fontWeight: FontWeight.w300),
         ),
         leading: GestureDetector(
-          onTap: () => Navigator.push(
-              context,
-              PageTransition(
-                  type: PageTransitionType.leftToRight, child: Category())),
-          child: Icon(
-            Icons.keyboard_arrow_left,
-            color: Colors.black,
-          ),
+          onTap: () => Navigator.pop(context), // Go back
+          child: const Icon(Icons.keyboard_arrow_left, color: Colors.black),
         ),
         centerTitle: true,
-        actions: [IconButton(onPressed: () {}, icon: Icon(Icons.filter_alt))],
+        actions: [
+          IconButton(
+            onPressed: () {},
+            icon: const Icon(Icons.filter_alt, color: Colors.black),
+          )
+        ],
       ),
-      body: SingleChildScrollView(
-          child: Column(
+      body: Column(
         children: <Widget>[
           Center(
             child: Text(
-              '239 items',
+              '${filteredItems.length} items', // Show dynamic item count
               style: GoogleFonts.poppins(fontSize: 16, color: Colors.grey),
             ),
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: <Widget>[
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => Navigator.push(
-                      context,
-                      PageTransition(
-                          type: PageTransitionType.rightToLeft,
-                          // child: ItemDataPage(item: ,)
-                          )),
-                  child: Container(
-                    margin: EdgeInsets.symmetric(horizontal: 20),
-                    height: 260,
-                    // color: Colors.black,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Stack(
-                          children: <Widget>[
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(20),
-                              child: Image.asset(
-                                'assets/whiteshirt.jpg',
-                                fit: BoxFit.cover,
-                                height: 210,
-                              ),
-                            ),
-                            Align(
-                              alignment: Alignment.topRight,
-                              child: Container(
-                                margin: EdgeInsets.all(6),
-                                child: CircleAvatar(
-                                    foregroundColor: Colors.black,
-                                    backgroundColor: Colors.white,
-                                    child: Icon(Icons.favorite)),
-                              ),
-                            )
-                          ],
-                        ),
-                        SizedBox(
-                          height: 10,
-                        ),
-                        Text(
-                          'White shirt',
-                          style: TextStyle(
-                              color: Colors.grey, fontWeight: FontWeight.w500),
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: <Widget>[
-                            Text(
-                              '\$72',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.w900, fontSize: 15),
-                            ),
-                            Icon(
-                              Icons.add,
-                            )
-                          ],
-                        )
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: Container(
-                  margin: EdgeInsets.symmetric(horizontal: 20),
-                  height: 290,
-                  // color: Colors.black,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      SizedBox(
-                        height: 30,
-                      ),
-                      Stack(
-                        children: <Widget>[
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(20),
-                            child: Image.asset(
-                              'assets/pantsuit.webp',
-                              fit: BoxFit.cover,
-                              height: 210,
-                            ),
-                          ),
-                          Align(
-                            alignment: Alignment.topRight,
-                            child: Container(
-                              margin: EdgeInsets.all(6),
-                              child: CircleAvatar(
-                                  foregroundColor: Colors.black,
-                                  backgroundColor: Colors.white,
-                                  child: Icon(Icons.favorite_border)),
-                            ),
-                          )
-                        ],
-                      ),
-                      SizedBox(
-                        height: 10,
-                      ),
-                      Text(
-                        'Pant suit',
-                        style: TextStyle(
-                            color: Colors.grey, fontWeight: FontWeight.w500),
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: <Widget>[
-                          Text(
-                            '\$52',
-                            style: TextStyle(
-                                fontWeight: FontWeight.w900, fontSize: 15),
-                          ),
-                          Icon(
-                            Icons.add,
-                          )
-                        ],
-                      )
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(
-            height: 20,
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: <Widget>[
-              Expanded(
-                child: Container(
-                  margin: EdgeInsets.symmetric(horizontal: 20),
-                  height: 260,
-                  // color: Colors.black,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Stack(
-                        children: <Widget>[
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(20),
-                            child: Image.asset(
-                              'assets/whiteshirt.jpg',
-                              fit: BoxFit.cover,
-                              height: 210,
-                            ),
-                          ),
-                          Align(
-                            alignment: Alignment.topRight,
-                            child: Container(
-                              margin: EdgeInsets.all(6),
-                              child: CircleAvatar(
-                                  foregroundColor: Colors.black,
-                                  backgroundColor: Colors.white,
-                                  child: Icon(Icons.favorite)),
-                            ),
-                          )
-                        ],
-                      ),
-                      SizedBox(
-                        height: 10,
-                      ),
-                      Text(
-                        'White shirt',
-                        style: TextStyle(
-                            color: Colors.grey, fontWeight: FontWeight.w500),
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: <Widget>[
-                          Text(
-                            '\$72',
-                            style: TextStyle(
-                                fontWeight: FontWeight.w900, fontSize: 15),
-                          ),
-                          Icon(
-                            Icons.add,
-                          )
-                        ],
-                      )
-                    ],
-                  ),
-                ),
-              ),
-              Expanded(
-                child: Container(
-                  margin: EdgeInsets.symmetric(horizontal: 20),
-                  height: 290,
-                  // color: Colors.black,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      SizedBox(
-                        height: 30,
-                      ),
-                      Stack(
-                        children: <Widget>[
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(20),
-                            child: Image.asset(
-                              'assets/pantsuit.webp',
-                              fit: BoxFit.cover,
-                              height: 210,
-                            ),
-                          ),
-                          Align(
-                            alignment: Alignment.topRight,
-                            child: Container(
-                              margin: EdgeInsets.all(6),
-                              child: CircleAvatar(
-                                  foregroundColor: Colors.black,
-                                  backgroundColor: Colors.white,
-                                  child: Icon(Icons.favorite_border)),
-                            ),
-                          )
-                        ],
-                      ),
-                      SizedBox(
-                        height: 10,
-                      ),
-                      Text(
-                        'Pant suit',
-                        style: TextStyle(
-                            color: Colors.grey, fontWeight: FontWeight.w500),
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: <Widget>[
-                          Text(
-                            '\$52',
-                            style: TextStyle(
-                                fontWeight: FontWeight.w900, fontSize: 15),
-                          ),
-                          Icon(
-                            Icons.add,
-                          )
-                        ],
-                      )
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: <Widget>[
-              Expanded(
-                child: Container(
-                  margin: EdgeInsets.symmetric(horizontal: 20),
-                  height: 260,
-                  // color: Colors.black,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Stack(
-                        children: <Widget>[
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(20),
-                            child: Image.asset(
-                              'assets/whiteshirt.jpg',
-                              fit: BoxFit.cover,
-                              height: 210,
-                            ),
-                          ),
-                          Align(
-                            alignment: Alignment.topRight,
-                            child: Container(
-                              margin: EdgeInsets.all(6),
-                              child: CircleAvatar(
-                                  foregroundColor: Colors.black,
-                                  backgroundColor: Colors.white,
-                                  child: Icon(Icons.favorite)),
-                            ),
-                          )
-                        ],
-                      ),
-                      SizedBox(
-                        height: 10,
-                      ),
-                      Text(
-                        'White shirt',
-                        style: TextStyle(
-                            color: Colors.grey, fontWeight: FontWeight.w500),
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: <Widget>[
-                          Text(
-                            '\$72',
-                            style: TextStyle(
-                                fontWeight: FontWeight.w900, fontSize: 15),
-                          ),
-                          Icon(
-                            Icons.add,
-                          )
-                        ],
-                      )
-                    ],
-                  ),
-                ),
-              ),
-              Expanded(
-                child: Container(
-                  margin: EdgeInsets.symmetric(horizontal: 20),
-                  height: 290,
-                  // color: Colors.black,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      SizedBox(
-                        height: 30,
-                      ),
-                      Stack(
-                        children: <Widget>[
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(20),
-                            child: Image.asset(
-                              'assets/pantsuit.webp',
-                              fit: BoxFit.cover,
-                              height: 210,
-                            ),
-                          ),
-                          Align(
-                            alignment: Alignment.topRight,
-                            child: Container(
-                              margin: EdgeInsets.all(6),
-                              child: CircleAvatar(
-                                  foregroundColor: Colors.black,
-                                  backgroundColor: Colors.white,
-                                  child: Icon(Icons.favorite_border)),
-                            ),
-                          )
-                        ],
-                      ),
-                      SizedBox(
-                        height: 10,
-                      ),
-                      Text(
-                        'Pant suit',
-                        style: TextStyle(
-                            color: Colors.grey, fontWeight: FontWeight.w500),
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: <Widget>[
-                          Text(
-                            '\$52',
-                            style: TextStyle(
-                                fontWeight: FontWeight.w900, fontSize: 15),
-                          ),
-                          Icon(
-                            Icons.add,
-                          )
-                        ],
-                      )
-                    ],
-                  ),
-                ),
-              ),
-            ],
+          const SizedBox(height: 10),
+          Expanded(
+            child: _buildItemList(appProvider, filteredItems),
           ),
         ],
-      )),
+      ),
+    );
+  }
+
+  Widget _buildItemList(AppProvider appProvider, List<Item> filteredItems) {
+    if (appProvider.itemsLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (appProvider.itemsError != null) {
+      return Center(
+          child: Text("Failed to load items: ${appProvider.itemsError}"));
+    }
+
+    if (filteredItems.isEmpty) {
+      return const Center(child: Text("No items found in this category."));
+    }
+
+    // Use GridView to display the items
+    return GridView.builder(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.all(15),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 15,
+        mainAxisSpacing: 15,
+        childAspectRatio: (1 / 1.6), // Same as home page
+      ),
+      itemCount: filteredItems.length,
+      itemBuilder: (context, index) {
+        final item = filteredItems[index];
+        return ItemCard(item: item); // Use the reusable widget
+      },
     );
   }
 }

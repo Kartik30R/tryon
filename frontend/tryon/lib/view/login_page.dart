@@ -4,7 +4,7 @@ import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
 import 'package:tryon/controller/app_provider.dart';
 import 'signup_page.dart';
- 
+
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -40,19 +40,22 @@ class _LoginPageState extends State<LoginPage> {
 
     if (mounted) {
       setState(() => _isLoading = false);
-    }
 
-    if (!success) {
-      // Show error message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(appProvider.authError ?? "Login failed. Please try again."),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (success) {
+        
+        Navigator.of(context).popUntil((route) => route.isFirst);
+        // -----------------------
+      } else {
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content:
+                Text(appProvider.authError ?? "Login failed. Please try again."),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
-    // On success, the AuthWrapper in main.dart will automatically
-    // navigate to the main app (BottomNavigation).
   }
 
   @override
@@ -122,12 +125,10 @@ class _LoginPageState extends State<LoginPage> {
                           backgroundColor: Colors.black),
                       onPressed: _isLoading ? null : _handleLogin,
                       child: _isLoading
-                          ? const CircularProgressIndicator(
-                              color: Colors.white)
+                          ? const CircularProgressIndicator(color: Colors.white)
                           : Text("Login",
                               style: GoogleFonts.poppins(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600)),
+                                  fontSize: 16, fontWeight: FontWeight.w600)),
                     ),
                   ),
                 ),
@@ -142,8 +143,7 @@ class _LoginPageState extends State<LoginPage> {
                           child: const SignupPage())),
                   child: Text("Don’t have an account? Sign up",
                       style: GoogleFonts.poppins(
-                          color: Colors.black,
-                          fontWeight: FontWeight.w500)),
+                          color: Colors.black, fontWeight: FontWeight.w500)),
                 ),
               ),
             ],
@@ -153,3 +153,4 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 }
+

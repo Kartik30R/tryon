@@ -9,15 +9,26 @@ enum ItemSize {
   static ItemSize fromJson(String json) => values.byName(json);
 }
 
+// Updated as per your request
 enum ItemCategory {
-  upperwear,
-  bottomwear,
+  cloths,
   shoes,
   watch,
   accessories;
 
   String toJson() => name;
-  static ItemCategory fromJson(String json) => values.byName(json);
+  static ItemCategory fromJson(String json) {
+    // Handle backend values that might be different
+    if (json == 'upperwear' || json == 'bottomwear') {
+      return ItemCategory.cloths;
+    }
+    try {
+      return values.byName(json);
+    } catch (e) {
+      // Fallback for any unknown category
+      return ItemCategory.accessories;
+    }
+  }
 }
 
 enum ArType {

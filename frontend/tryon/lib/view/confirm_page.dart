@@ -19,11 +19,10 @@ class _ConfirmPageState extends State<ConfirmPage> {
   @override
   void initState() {
     super.initState();
-    // Pre-fill address if we have it (we don't, but this is how you would)
-    // final user = context.read<AppProvider>().currentUser;
-    // if (user != null) {
-    //   _addressController.text = user.address;
-    // }
+     final user = context.read<AppProvider>().currentUser;
+    if (user != null) {
+      _addressController.text = user.address;
+    }
   }
 
   @override
@@ -54,7 +53,7 @@ class _ConfirmPageState extends State<ConfirmPage> {
       );
       // Navigate to the Orders page (index 1) and clear the navigation stack
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const BottomNavigation(initialIndex: 1)),
+        MaterialPageRoute(builder: (_) => const BottomNavigation()),
         (route) => false,
       );
     } else {

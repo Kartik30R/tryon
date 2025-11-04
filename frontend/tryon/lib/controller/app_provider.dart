@@ -214,6 +214,28 @@ class AppProvider with ChangeNotifier {
     notifyListeners();
   }
 
+   Future<void> fetchUserData() async {
+    if (_userId == null) {
+      _authError = "User ID not found.";
+      return;
+    }
+
+    // This data is part of the auth flow, so use auth loading/error states
+    // We don't notify listeners here to avoid redundant loading spinners
+    // as this is usually called within another loading method.
+    
+    try {
+      _currentUser = await _apiService.getUserById(_userId!);
+      notifyListeners(); // Notify after data is fetched
+    } on DioException catch (e) {
+      _authError = _parseError(e, "Failed to load user data.");
+      notifyListeners();
+    } catch (e) {
+      _authError = "An unexpected error occurred loading user data.";
+      notifyListeners();
+    }
+  }
+
   // ========== ITEM ACTIONS ==========
 
   /// Fetches all items from the store.
