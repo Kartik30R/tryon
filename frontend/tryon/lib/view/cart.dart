@@ -4,7 +4,7 @@ import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
 import 'package:tryon/controller/app_provider.dart';
 import 'package:tryon/models/cart.dart';
- import 'confirm_page.dart';
+import 'confirm_page.dart';
 
 class CartPage extends StatelessWidget {
   const CartPage({super.key});
@@ -17,8 +17,14 @@ class CartPage extends StatelessWidget {
     // Calculate totals
     double subtotal = 0;
     if (appProvider.cart != null) {
+      // --- FIX ---
+      // Add null check for item before calculating price
       subtotal = appProvider.cart!.items.fold(
-          0.0, (sum, item) => sum + (item.item.price * item.qty));
+          0.0,
+          (sum, cartItem) => cartItem.item == null
+              ? sum
+              : sum + (cartItem.item!.price * cartItem.qty));
+      // --- END FIX ---
     }
     const double deliveryFee = 10.0;
     final double total = subtotal + deliveryFee;
@@ -60,6 +66,7 @@ class CartPage extends StatelessWidget {
                   itemCount: provider.cart!.items.length,
                   itemBuilder: (context, index) {
                     final cartItem = provider.cart!.items[index];
+                    // Note: CartItemTile itself now handles null items
                     return CartItemTile(cartItem: cartItem);
                   },
                 );
@@ -162,7 +169,15 @@ class CartItemTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // --- FIX ---
+    // If item is null (orphan data), don't build the tile
+    if (cartItem.item == null) {
+      return const SizedBox.shrink(); // Build nothing
+    }
+    // --- END FIX ---
+
     final provider = context.read<AppProvider>();
+    final item = cartItem.item!; // Now we can safely use '!'
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -192,21 +207,21 @@ class CartItemTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
-                  cartItem.item.name,
+                  item.name, // Use item.name
                   style: GoogleFonts.poppins(
                       color: Colors.grey,
                       fontSize: 14,
                       fontWeight: FontWeight.w500),
                 ),
                 Text(
-                  '(Size: ${cartItem.item.size.name.characters.first})', // Show item size
+                  '(Size: ${item.size.name.characters.first})', // Use item.size
                   style: GoogleFonts.poppins(
                       color: Colors.grey,
                       fontSize: 14,
                       fontWeight: FontWeight.w500),
                 ),
                 Text(
-                  '\$${cartItem.item.price.toStringAsFixed(2)}',
+                  '\$${item.price.toStringAsFixed(2)}', // Use item.price
                   style: GoogleFonts.poppins(
                       fontWeight: FontWeight.w600, fontSize: 16),
                 )
@@ -220,7 +235,7 @@ class CartItemTile extends StatelessWidget {
                 icon: const Icon(Icons.remove, color: Colors.grey, size: 18),
                 onPressed: () {
                   provider.updateCartItemQty(
-                      cartItem.item.id, cartItem.qty - 1);
+                      item.id, cartItem.qty - 1); // Use item.id
                 },
               ),
               Text(
@@ -231,7 +246,7 @@ class CartItemTile extends StatelessWidget {
                 icon: const Icon(Icons.add, color: Colors.grey, size: 18),
                 onPressed: () {
                   provider.updateCartItemQty(
-                      cartItem.item.id, cartItem.qty + 1);
+                      item.id, cartItem.qty + 1); // Use item.id
                 },
               ),
             ],
@@ -277,4 +292,5 @@ class _OrderInfoRow extends StatelessWidget {
     );
   }
 }
+
 

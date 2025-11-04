@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+
 import 'package:tryon/core/api/api_service.dart';
 import 'package:tryon/core/network/api_client.dart';
 import 'package:tryon/core/utils/shared_pref_utils.dart';
@@ -7,111 +8,114 @@ import 'package:tryon/models/cart.dart';
 import 'package:tryon/models/item.dart';
 import 'package:tryon/models/order.dart';
 import 'package:tryon/models/user.dart';
- 
 
-/// AppProvider
-///
-/// Manages all global application state, including authentication,
-/// user data (cart, orders), and global data (item catalog).
-class AppProvider with ChangeNotifier {
-  final ApiService _apiService;
+class AppProvider extends ChangeNotifier {
+  late ApiService _apiService;
 
-  // --- Private State Variables ---
-
-  // Authentication
+  // App-wide state
   bool _isLoggedIn = false;
-  String? _userId;
-  User? _currentUser; // Optional: store full user object
-  bool _authLoading = false;
-  String? _authError;
-
-  // Item Catalog
-  List<Item> _allItems = [];
-  bool _itemsLoading = false;
-  String? _itemsError;
-
-  // User's Cart
-  Cart? _cart;
-  bool _cartLoading = false;
-  String? _cartError;
-
-  // User's Orders
-  List<Order> _userOrders = [];
-  bool _ordersLoading = false;
-  String? _ordersError;
-
-  // --- Public Getters ---
-
-  // Auth
   bool get isLoggedIn => _isLoggedIn;
+
+  String? _userId;
   String? get userId => _userId;
+
+  User? _currentUser;
   User? get currentUser => _currentUser;
+
+  // Loading and Error states
+  bool _authLoading = false;
   bool get authLoading => _authLoading;
+  String? _authError;
   String? get authError => _authError;
 
-  // Items
-  List<Item> get allItems => _allItems;
+  bool _itemsLoading = false;
   bool get itemsLoading => _itemsLoading;
+  String? _itemsError;
   String? get itemsError => _itemsError;
 
-  // Cart
-  Cart? get cart => _cart;
+  bool _cartLoading = false;
   bool get cartLoading => _cartLoading;
+  String? _cartError;
   String? get cartError => _cartError;
-  int get cartItemCount =>
-      _cart?.items.fold(0, (sum, item) => sum??0 + item.qty) ?? 0;
 
-  // Orders
-  List<Order> get userOrders => _userOrders;
+  bool _ordersLoading = false;
   bool get ordersLoading => _ordersLoading;
+  String? _ordersError;
   String? get ordersError => _ordersError;
 
-  // --- Constructor ---
+  // Data
+  List<Item> _allItems = [];
+  List<Item> get allItems => _allItems;
 
-  /// Creates the AppProvider.
-  ///
-  /// Accesses the singleton ApiService from ApiClient
-  /// and immediately tries to load the user session.
-  AppProvider() : _apiService = ApiClient().apiService {
-    _loadUserSession();
+  Cart? _cart;
+  Cart? get cart => _cart;
+
+  List<Order> _userOrders = [];
+  List<Order> get userOrders => _userOrders;
+
+  AppProvider() {
+    _apiService = ApiClient().apiService;
+    _init();
   }
 
-  /// Checks SharedPreferences for a saved session and loads
-  /// user data if one is found.
-  void _loadUserSession() async {
-    _isLoggedIn = SharedPrefUtils.isLoggedIn();
-    _userId = SharedPrefUtils.getUserId();
-
-    if (_isLoggedIn && _userId != null) {
-      // User is logged in, fetch their essential data
-      // We can run these in parallel
-      await Future.wait([
-        fetchCart(),
-        fetchUserOrders(),
-        // fetchCurrentUserDetails(), // Optional: if you add a /user/:id route
-      ]);
+  /// Check shared prefs for a saved session on app start
+  Future<void> _init() async {
+    if (SharedPrefUtils.isLoggedIn()) {
+      _isLoggedIn = true;
+      _userId = SharedPrefUtils.getUserId();
+      if (_userId != null) {
+        await _loadUserSession();
+      } else {
+        // Mismatch, clear session
+        await logout();
+      }
     }
-    
-    // Always fetch the item catalog
-    await fetchAllItems();
-
-    // Notify listeners after all initial data is loaded
     notifyListeners();
   }
 
-  // --- Internal Helper ---
-
-  /// Parses a DioException to get a user-friendly error message
-  String _parseError(DioException e, [String defaultMsg = "An error occurred"]) {
-    if (e.response?.data != null && e.response!.data['msg'] != null) {
-      return e.response!.data['msg'] as String;
+  /// Loads all user data after an init or login
+  Future<void> _loadUserSession() async {
+    _authLoading = true;
+    notifyListeners();
+    try {
+      await Future.wait([
+        fetchUserData(),
+        fetchAllItems(),
+        fetchCart(),
+        fetchUserOrders(),
+      ]);
+      _authLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _authError = "Failed to load user session.";
+      _authLoading = false;
+      notifyListeners();
     }
-    return defaultMsg;
   }
 
-  // --- Public Methods (Actions) ---
-
   // ========== AUTH ACTIONS ==========
+
+  /// Fetches user data and stores it in _currentUser
+  Future<void> fetchUserData() async {
+    if (_userId == null) {
+      _authError = "User ID not found.";
+      return;
+    }
+
+    _authLoading = true;
+    // Don't notify yet, let the caller decide
+    
+    try {
+      _currentUser = await _apiService.getUserById(_userId!);
+    } on DioException catch (e) {
+      _authError = _parseError(e, "Failed to load user data.");
+    } catch (e) {
+      _authError = "An unexpected error occurred loading user data.";
+    } finally {
+      _authLoading = false;
+      notifyListeners();
+    }
+  }
 
   /// Logs in a user with email and password.
   /// Returns `true` on success, `false` on failure.
@@ -128,14 +132,9 @@ class AppProvider with ChangeNotifier {
       _isLoggedIn = true;
       await SharedPrefUtils.saveUserSession(_userId!);
 
-      // Load user data after successful login
-      await Future.wait([
-        fetchCart(),
-        fetchUserOrders(),
-      ]);
+      // Load all user data
+      await _loadUserSession(); // This will notify listeners when done
 
-      _authLoading = false;
-      notifyListeners();
       return true;
     } on DioException catch (e) {
       _authError = _parseError(e, "Invalid credentials. Please try again.");
@@ -177,12 +176,9 @@ class AppProvider with ChangeNotifier {
       _isLoggedIn = true;
       await SharedPrefUtils.saveUserSession(_userId!);
 
-      // New user, cart will be empty but let's init it
-      await fetchCart();
-      _userOrders = []; // New user has no orders
+      // Load all user data
+      await _loadUserSession(); // This will notify listeners when done
 
-      _authLoading = false;
-      notifyListeners();
       return true;
     } on DioException catch (e) {
       _authError = _parseError(e, "Signup failed. Please try again.");
@@ -204,77 +200,59 @@ class AppProvider with ChangeNotifier {
     _currentUser = null;
     _cart = null;
     _userOrders = [];
+    _allItems = []; // Clear item catalog
 
     // Clear all errors
     _authError = null;
     _cartError = null;
     _ordersError = null;
+    _itemsError = null;
 
     await SharedPrefUtils.clearUserSession();
     notifyListeners();
   }
 
-   Future<void> fetchUserData() async {
-    if (_userId == null) {
-      _authError = "User ID not found.";
-      return;
-    }
-
-    // This data is part of the auth flow, so use auth loading/error states
-    // We don't notify listeners here to avoid redundant loading spinners
-    // as this is usually called within another loading method.
-    
-    try {
-      _currentUser = await _apiService.getUserById(_userId!);
-      notifyListeners(); // Notify after data is fetched
-    } on DioException catch (e) {
-      _authError = _parseError(e, "Failed to load user data.");
-      notifyListeners();
-    } catch (e) {
-      _authError = "An unexpected error occurred loading user data.";
-      notifyListeners();
-    }
-  }
-
   // ========== ITEM ACTIONS ==========
 
-  /// Fetches all items from the store.
+  /// Fetches all items from the server
   Future<void> fetchAllItems() async {
     _itemsLoading = true;
     _itemsError = null;
-    // Don't notify yet, may be part of initial load
+    // Don't notify if called from _loadUserSession
+    if (!_authLoading) notifyListeners();
 
     try {
       _allItems = await _apiService.getAllItems();
     } on DioException catch (e) {
-      _itemsError = _parseError(e, "Failed to load items");
+      _itemsError = _parseError(e, "Failed to load items.");
     } catch (e) {
       _itemsError = "An unexpected error occurred.";
     } finally {
       _itemsLoading = false;
-      notifyListeners();
+      if (!_authLoading) notifyListeners();
     }
   }
 
   // ========== CART ACTIONS ==========
 
-  /// Fetches the user's current cart.
+  /// Fetches the user's cart
   Future<void> fetchCart() async {
-    if (_userId == null) return; // Not logged in
+    if (_userId == null) return;
 
     _cartLoading = true;
     _cartError = null;
-    notifyListeners();
+    // Don't notify if called from _loadUserSession
+    if (!_authLoading) notifyListeners();
 
     try {
-      _cart = (await _apiService.getCart(_userId!)) as Cart?;
+      _cart = await _apiService.getCart(_userId!);
     } on DioException catch (e) {
-      _cartError = _parseError(e, "Failed to load cart");
+      _cartError = _parseError(e, "Failed to load cart.");
     } catch (e) {
       _cartError = "An unexpected error occurred.";
     } finally {
       _cartLoading = false;
-      notifyListeners();
+      if (!_authLoading) notifyListeners();
     }
   }
 
@@ -287,33 +265,14 @@ class AppProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final body = {"userId": _userId!, "itemId": itemId};
-      final response = await _apiService.addItemToCart(body);
-      _cart = response.cart; // API returns the updated cart
+      final body = {"userId": _userId, "itemId": itemId};
+      // Don't use the returned cart, it's not populated.
+      await _apiService.addItemToCart(body);
+
+      // Fetch the full cart to get populated data
+      await fetchCart();
     } on DioException catch (e) {
-      _cartError = _parseError(e, "Failed to add item");
-    } catch (e) {
-      _cartError = "An unexpected error occurred.";
-    } finally {
-      _cartLoading = false;
-      notifyListeners();
-    }
-  }
-
-  /// Removes an item from the cart.
-  Future<void> removeItemFromCart(String itemId) async {
-    if (_userId == null) return;
-
-    _cartLoading = true;
-    _cartError = null;
-    notifyListeners();
-
-    try {
-      final body = {"userId": _userId!, "itemId": itemId};
-      final response = await _apiService.removeItemFromCart(body);
-      _cart = response.cart; // API returns the updated cart
-    } on DioException catch (e) {
-      _cartError = _parseError(e, "Failed to remove item");
+      _cartError = _parseError(e, "Failed to add item.");
     } catch (e) {
       _cartError = "An unexpected error occurred.";
     } finally {
@@ -323,84 +282,132 @@ class AppProvider with ChangeNotifier {
   }
 
   /// Updates an item's quantity in the cart.
+  /// If qty <= 0, the item is removed.
   Future<void> updateCartItemQty(String itemId, int newQty) async {
     if (_userId == null) return;
 
-    _cartLoading = true;
+    // Optimistic UI update
+    final originalCart = _cart;
+    if (newQty <= 0) {
+      // Remove item
+      _cart?.items.removeWhere((item) => item.item?.id == itemId);
+    } else {
+      // Update qty
+      final index = _cart?.items.indexWhere((item) => item.item?.id == itemId);
+      if (index != null && index != -1) {
+        _cart?.items[index] = _cart!.items[index].copyWith(qty: newQty);
+      }
+    }
     _cartError = null;
     notifyListeners();
 
     try {
       final body = {
-        "userId": _userId!,
+        "userId": _userId,
         "itemId": itemId,
         "updates": {"qty": newQty}
       };
-      final response = await _apiService.updateCartItem(body);
-      _cart = response.cart; // API returns the updated cart
+      // API call in the background
+      await _apiService.updateCartItem(body);
+      // Fetch cart to re-sync
+      await fetchCart();
     } on DioException catch (e) {
-      _cartError = _parseError(e, "Failed to update item");
+      _cartError = _parseError(e, "Failed to update cart.");
+      _cart = originalCart; // Revert
+      notifyListeners();
     } catch (e) {
       _cartError = "An unexpected error occurred.";
-    } finally {
+      _cart = originalCart; // Revert
+      notifyListeners();
+    }
+  }
+
+  /// Checks out the cart and creates an order.
+  /// Returns `true` on success, `false` on failure.
+  Future<bool> checkout(String address) async {
+    _cartLoading = true;
+    _cartError = null;
+    notifyListeners();
+
+    if (_userId == null) {
+      _cartError = "User not logged in.";
       _cartLoading = false;
       notifyListeners();
+      return false;
+    }
+
+    try {
+      final body = {"userId": _userId, "address": address};
+      await _apiService.checkout(body);
+
+      // Clear local cart and fetch empty one
+      _cart = null;
+      await fetchCart();
+      // Refresh order list
+      await fetchUserOrders();
+
+      _cartLoading = false;
+      // No notifyListeners() needed, fetchCart/fetchUserOrders will do it
+      return true;
+    } on DioException catch (e) {
+      _cartError = _parseError(e, "Checkout failed.");
+      _cartLoading = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _cartError = "An unexpected error occurred during checkout.";
+      _cartLoading = false;
+      notifyListeners();
+      return false;
     }
   }
 
   // ========== ORDER ACTIONS ==========
 
-  /// Fetches the user's order history.
+  /// Fetches all orders for the current user
   Future<void> fetchUserOrders() async {
     if (_userId == null) return;
 
     _ordersLoading = true;
     _ordersError = null;
-    notifyListeners();
+    if (!_authLoading) notifyListeners();
 
     try {
       _userOrders = await _apiService.getUserOrders(_userId!);
     } on DioException catch (e) {
-      _ordersError = _parseError(e, "Failed to load orders");
+      _ordersError = _parseError(e, "Failed to load orders.");
     } catch (e) {
       _ordersError = "An unexpected error occurred.";
     } finally {
       _ordersLoading = false;
-      notifyListeners();
+      if (!_authLoading) notifyListeners();
     }
   }
 
-  /// Checks out the current cart and creates an order.
-  /// Returns `true` on success, `false` on failure.
-  Future<bool> checkout(String address) async {
-    if (_userId == null) return false;
+  // ========== HELPERS ==========
 
-    _cartLoading = true; // Use cart loading as it's a cart action
-    _cartError = null;
-    notifyListeners();
-
+  /// Parses a DioException to get a user-friendly error message.
+  String _parseError(DioException e,
+      [String defaultMsg = "An error occurred."]) {
+    // --- FIX ---
+    // Make this function safer to handle non-Map error responses (like 520 HTML)
     try {
-      final body = {"userId": _userId!, "address": address};
-      await _apiService.checkout(body);
-
-      // Success! Clear the local cart and refresh the order list
-      _cart = null; // Or re-fetch the now-empty cart
-      await fetchCart(); // Fetches the empty cart
-      await fetchUserOrders(); // Adds the new order to the list
-
-      _cartLoading = false;
-      notifyListeners();
-      return true;
-    } on DioException catch (e) {
-      _cartError = _parseError(e, "Checkout failed");
-      _cartLoading = false;
-      notifyListeners();
-      return false;
-    } catch (e) {
-      _cartError = "An unexpected error occurred.";
-      _cartLoading = false;
-      notifyListeners();
-      return false;
+      if (e.response != null &&
+          e.response!.data != null &&
+          e.response!.data is Map) {
+        final data = e.response!.data as Map;
+        // Safely check for 'msg' key
+        if (data.containsKey('msg')) {
+          return data['msg']?.toString() ?? defaultMsg;
+        }
+      }
+      // If response is not a Map (e.g., HTML from a 520 error), return default.
+    } catch (_) {
+      // Fallback if parsing the error itself fails
+      return defaultMsg;
     }
+    // --- END FIX ---
+    return defaultMsg;
   }
 }
+
